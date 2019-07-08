@@ -207,19 +207,3 @@ module condcheck( 	input  logic [3:0] Cond,
   			endcase
 
 endmodule // condcheck module.
-
-// ----------------------------------------------------------------------- register module:
-// enable = 1 if it has no enable signals
-// reset  = 0 if it has no reset  signals
-module flopenr#(parameter WIDTH = 8)
-			   (input  logic				clk, reset, en,
-			   	input  logic [WIDTH-1:0]	d,
-			   	output logic [WIDTH-1:0]	q);
-
-		// a flip-flop with the corresponding needs.
-		always_ff @(posedge clk, posedge reset)
-			if(reset)	 q<=0;
-			else if (en) q<=d;
-
-
-endmodule // flopenr module 

@@ -103,11 +103,11 @@ module ALU (input 	logic [31:0] A,
 
 	always_comb
 		case (ALUControl)
-			2'b00 	: {cout, Result} = A + B;	// add.
-			2'b01 	: {cout, Result} = A - B;	// subtract.
-			2'b10 	: Result = A & B;			// and.
-			2'b11 	: Result = A | B;			// or.
-			default : Result = 32'bx;			// for the sake of combinational logic.
+			2'b00 	: {cout, Result} = A + B;			// add.
+			2'b01 	: {cout, Result} = A - B;			// subtract.
+			2'b10 	: {cout, Result} = {1'bx, A & B}; 	// and.
+			2'b11 	: {cout, Result} = {1'bx, A | B};	// or.
+			default : {cout, Result} = 33'bx; 			// for the sake of combinational logic.
 		endcase
 
 	// ALU flags:
