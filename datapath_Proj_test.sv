@@ -25,16 +25,16 @@ module datapath(input  logic        clk, reset,
   // ADD CODE HERE
   
   // PC register:
-  flopenr #(32)pc_pcNext(clk, 1'b0, PCWrite, PCNext, PC);
+  flopenr #(32)pc_pcNext(clk, reset, PCWrite, PCNext, PC);
 
   // AdrSrc multiplexer:
   assign Adr = AdrSrc? Result : PC;
 
   // Instr non-architectural register:
-  flopenr #(32)Instr_RD(clk, 1'b0, IRWrite, ReadData, Instr);
+  flopenr #(32)Instr_RD(clk, reset, IRWrite, ReadData, Instr);
 
   // Data non-architectural register:
-  flopenr #(32)d_RD(clk, 1'b0, 1'b1, ReadData, Data);
+  flopenr #(32)d_RD(clk, reset, 1'b1, ReadData, Data);
 
   // RegSrc[1:0] multiplexers:
   assign RA1 = RegSrc[0]? 15 : Instr[19:16];
@@ -48,10 +48,10 @@ module datapath(input  logic        clk, reset,
   	Instr[15:12], Result, Result, RD1, RD2);
 
   // WriteData 's non-architectural register:
-  flopenr #(32)WD_rd2(clk, 1'b0, 1'b1, RD2, WriteData);
+  flopenr #(32)WD_rd2(clk, reset, 1'b1, RD2, WriteData);
 
   // A from the RD1 's non-architectural register:
-  flopenr #(32)a_rd1(clk, 1'b0, 1'b1, RD1, A);
+  flopenr #(32)a_rd1(clk, reset, 1'b1, RD1, A);
 
   // ALUSrcA multiplexer:
   assign SrcA = ALUSrcA ? PC : A;
@@ -63,7 +63,7 @@ module datapath(input  logic        clk, reset,
   ALU alu(SrcA, SrcB, ALUControl, ALUResult, ALUFlags);
 
   // ALU 's non-architectural register:
-  flopenr #(32)alureg(clk, 1'b0, 1'b1, ALUResult, ALUOut);
+  flopenr #(32)alureg(clk, reset, 1'b1, ALUResult, ALUOut);
 
   // Result's multiplexer:
   mux3    #(32)res(ALUOut, Data, ALUResult);
