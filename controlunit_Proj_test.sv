@@ -52,7 +52,7 @@ endmodule // controller module.
  				       // respectively for the following values: 00,  01,  10, 11 
 
  */
-module decode(	 input  logic       clk, reset,
+module decode(	  input  logic       clk, reset,
 	              input  logic [1:0]   Op,
 	              input  logic [5:0]   Funct,
 	              input  logic [3:0]   Rd,
@@ -112,25 +112,26 @@ module maindecoder(input  logic       clk, reset,
                    output logic       NextPC, AdrSrc,
                    output logic [1:0] ResultSrc,
                    output logic       ALUSrcA,
-                   output logic [1:0] ALUSrcB
+                   output logic [1:0] ALUSrcB,
                    output logic       Branch, ALUOp);
         logic [3:0] state, nextstate;
         logic       ALUSrcA1;
+        logic [2:0] nothing;
 
         always_comb
           case(state)
-              4'b0000 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h114C;  // Fetch
-              4'b0001 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h004C;  // Decode
-              4'b0010 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0002;  // MemAdr
-              4'b0011 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0080;  // MemRead
-              4'b0100 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0220;  // MemWB
-              4'b0101 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0480;  // MemWrite
-              4'b0110 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0001;  // ExecuteR
-              4'b0111 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0003;  // ExecuteI
-              4'b1000 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0200;  // ALUWB
-              4'b1001 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0842;  // branch
-              default : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'hx;     // combinational
-                                                                                                                                // undefined
+              4'b0000 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h114C;  // Fetch
+              4'b0001 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h004C;  // Decode
+              4'b0010 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0002;  // MemAdr
+              4'b0011 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0080;  // MemRead
+              4'b0100 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0220;  // MemWB
+              4'b0101 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0480;  // MemWrite
+              4'b0110 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0001;  // ExecuteR
+              4'b0111 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0003;  // ExecuteI
+              4'b1000 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0200;  // ALUWB
+              4'b1001 : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0842;  // branch
+              default : {nothing, NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'hx;     // combinational
+                                                                                                                                         // undefined.
           endcase
 
         always_ff @(clk, reset)
@@ -170,9 +171,9 @@ endmodule
 // ----------------------------------------------------------------------- ALU decoder module :
 // ALU Decoder which determines the ALUControl [1:0] and the FlagW [1:0] signals:
 module aludecoder(	input  logic [4:0]	Funct,
-				  	        input  logic 		ALUOp,
-				  	        output logic [1:0]	ALUControl,
-				  	        output logic [1:0]	FlagW);
+				  	input  logic 		ALUOp,
+				  	output logic [1:0]	ALUControl,
+				  	output logic [1:0]	FlagW);
 		
 		always_comb
 			if(ALUOp)begin
@@ -196,9 +197,9 @@ endmodule // aluDecoder module.
 // ----------------------------------------------------------------------- PC Logic module :
 // PC Logic module which maintains if the PC should be updated.
 module pclogic(	  	input  logic [3:0]	Rd,
-			   	  	      input  logic 		Branch,
-			   	  	      input  logic 		RegW,
-			   	  	      output logic 		PCS);
+			   	  	input  logic 		Branch,
+			   	  	input  logic 		RegW,
+			   	  	output logic 		PCS);
 		
 		assign PCS = ((Rd==15)&RegW)|Branch;	// if branching or if the R15 is needed 
 												// and we want to set the registers (register wirte is enabled).
