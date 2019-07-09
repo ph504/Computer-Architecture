@@ -22,5 +22,12 @@ module datapath_testbench();
                           RegSrc, 
                           ALUSrcA, ALUSrcB, ResultSrc,
                           ImmSrc, ALUControl);
+        initial begin
+            reset <=1; #22; reset <=0;
+        end
+        
+        always begin 
+            clk <= 1; #5; clk <= 0; #5;
+        end
 
 endmodule // datapath_testbench

@@ -36,31 +36,31 @@ endmodule // controller module.
  * PCS  	  	// goes to Cond Logic. // 1 when we modify the PC. 
  				   					   // (look in the PC Logic module for more details of implementation).
 	
- * NextPC 		// goes to Cond Logic. // 1 when it is in fetch state and is getting the next Instruction.
- * RegW 		// goes to Cond Logic.
- * MemW 		// goes to Cond Logic.
- * IRWrite 		// Enables reading the instruction from the Instruction memory.
- * AdrSrc		// chooses whether to read Data or Instruction from the Memory.
- * ResultSrc	// chooses the signal to be the Result from the ALU (ALUOut, Data, ALUResult).
- * ALUSrcA		// chooses the first operand for the ALU.
- * ALUSrcB		// chooses the second operand for the ALU.
- * ImmSrc		// chooses the correct form for extending the immediate given in the machie code.
+ * NextPC 		 // goes to Cond Logic. // 1 when it is in fetch state and is getting the next Instruction.
+ * RegW 		   // goes to Cond Logic.
+ * MemW 		   // goes to Cond Logic.
+ * IRWrite 		 // Enables reading the instruction from the Instruction memory.
+ * AdrSrc		   // chooses whether to read Data or Instruction from the Memory.
+ * ResultSrc	 // chooses the signal to be the Result from the ALU (ALUOut, Data, ALUResult).
+ * ALUSrcA		 // chooses the first operand for the ALU.
+ * ALUSrcB	   // chooses the second operand for the ALU.
+ * ImmSrc		   // chooses the correct form for extending the immediate given in the machie code.
  * RegSrc	    							// the first bit chooses whether to read the PC or the Rn for the first address.
  											//the second bit chooses whether the Rm or Rd should be picked 
  											//based on the instruction being Memory access or Data processing.
- * ALUControl	// chooses for the ALU to perform either ADD, SUB, AND, OR 
- 				// respectively for the following values: 00,  01,  10, 11 
+ * ALUControl	 // chooses for the ALU to perform either ADD, SUB, AND, OR 
+ 				       // respectively for the following values: 00,  01,  10, 11 
 
  */
-module decode(	  input  logic       clk, reset,
-	              input  logic [1:0] Op,
-	              input  logic [5:0] Funct,
-	              input  logic [3:0] Rd,
-	              output logic [1:0] FlagW,
-	              output logic       PCS, NextPC, RegW, MemW,
-	              output logic       IRWrite, AdrSrc,
-	              output logic [1:0] ResultSrc, ALUSrcA, ALUSrcB, 
-	              output logic [1:0] ImmSrc, RegSrc, ALUControl);
+module decode(	 input  logic       clk, reset,
+	              input  logic [1:0]   Op,
+	              input  logic [5:0]   Funct,
+	              input  logic [3:0]   Rd,
+	              output logic [1:0]   FlagW,
+	              output logic         PCS, NextPC, RegW, MemW,
+	              output logic         IRWrite, AdrSrc,
+	              output logic [1:0]   ResultSrc, ALUSrcA, ALUSrcB, 
+	              output logic [1:0]   ImmSrc, RegSrc, ALUControl);
 
   // ADD CODE HERE
   // Implement a microprogrammed controller
@@ -77,14 +77,17 @@ module decode(	  input  logic       clk, reset,
   instrdecoder 	ins_dec(Funct[5:0], Op[1:0], ImmSrc[1:0], RegSrc[1:0]);
 
   //Main Decoder :
+  maindecoder   md(clk, reset, Op[1:0], Funct[5:0],
+                   RegW, MemW, IRWrite, NextPC, AdrSrc,
+                   ResultSrc, ALUSrcA, ALUSrcB[1:0], Branch, ALUOp);
 
 endmodule // decode module.
 
 // ----------------------------------------------------------------------- instruction decoder module :
 module instrdecoder(input  logic [5:0] Funct,
-					input  logic [1:0] Op,
-					output logic [1:0] ImmSrc,
-					output logic [1:0] RegSrc);
+					          input  logic [1:0] Op,
+					          output logic [1:0] ImmSrc,
+					          output logic [1:0] RegSrc);
 
 		always_comb
 			case({Op,Funct[5],Funct[0]})
@@ -100,12 +103,76 @@ module instrdecoder(input  logic [5:0] Funct,
 
 endmodule // instrdecoder module.
 
+// ----------------------------------------------------------------------- Main decoder module :
+module maindecoder(input  logic       clk, reset,
+                   input  logic [1:0] Op,
+                   input  logic [5:0] Funct,
+                   output logic       RegW, MemW,
+                   output logic       IRWrite,
+                   output logic       NextPC, AdrSrc,
+                   output logic [1:0] ResultSrc,
+                   output logic       ALUSrcA,
+                   output logic [1:0] ALUSrcB
+                   output logic       Branch, ALUOp);
+        logic [3:0] state, nextstate;
+        logic       ALUSrcA1;
+
+        always_comb
+          case(state)
+              4'b0000 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h114C;  // Fetch
+              4'b0001 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h004C;  // Decode
+              4'b0010 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0002;  // MemAdr
+              4'b0011 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0080;  // MemRead
+              4'b0100 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0220;  // MemWB
+              4'b0101 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0480;  // MemWrite
+              4'b0110 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0001;  // ExecuteR
+              4'b0111 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0003;  // ExecuteI
+              4'b1000 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0200;  // ALUWB
+              4'b1001 : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'h0842;  // branch
+              default : {NextPC, Branch, MemW, RegW, IRWrite, AdrSrc, ResultSrc, ALUSrcA1, ALUSrcA, ALUSrcB, ALUOp} = 4'hx;     // combinational
+                                                                                                                                // undefined
+          endcase
+
+        always_ff @(clk, reset)
+            if(reset) state <= 4'b0000;
+            else      state <= nextstate;
+                                                           // NextState // Current State
+        always_comb
+            case(state)
+                4'b0000 : nextstate = 4'b0001;                          // fetch
+
+                4'b0001 : if(Op==2'b01)                    // MemAdr.   // decode
+                              nextstate = 4'b0010;
+                          else if(Op==2'b00 & (~Funct[5])) // ExecuteR.
+                              nextstate = 4'b0110;
+                          else if(Op==2'b00 & Funct[5])    // ExecuteI.
+                              nextstate = 4'b0111;         
+                          else if(Op==10)                  // Branch.
+                              nextstate = 4'b1001;
+                          else                             // undefined.
+                              nextstate = 4'bx;
+                4'b0010 : if(Funct[0])                     // MemRead.  // MemAdr
+                              nextstate = 4'b0011;
+                          else                             // MemWrite. 
+                              nextstate = 4'b0101;
+
+                4'b0011 :     nextstate = 4'b0100;         // MemWB.    // MemRead
+                4'b0100 :     nextstate = 4'b0000;         // Fetch.    // MemWB
+                4'b0101 :     nextstate = 4'b0000;         // Fecth.    // MemWrite
+                4'b0110 :     nextstate = 4'b1000;         // ALUWB.    // ExecuteR
+                4'b0111 :     nextstate = 4'b1000;         // ALUWB.    // ExecuteI
+                4'b1000 :     nextstate = 4'b0000;         // Fetch.    // ALUWB
+                4'b1001 :     nextstate = 4'b0000;         // Fetch.    // Branch
+                default :     nextstate = 4'bx;            // UNDEFINED.// COMB
+            endcase
+endmodule
+
 // ----------------------------------------------------------------------- ALU decoder module :
 // ALU Decoder which determines the ALUControl [1:0] and the FlagW [1:0] signals:
 module aludecoder(	input  logic [4:0]	Funct,
-				  	input  logic 		ALUOp,
-				  	output logic [1:0]	ALUControl,
-				  	output logic [1:0]	FlagW);
+				  	        input  logic 		ALUOp,
+				  	        output logic [1:0]	ALUControl,
+				  	        output logic [1:0]	FlagW);
 		
 		always_comb
 			if(ALUOp)begin
@@ -129,9 +196,9 @@ endmodule // aluDecoder module.
 // ----------------------------------------------------------------------- PC Logic module :
 // PC Logic module which maintains if the PC should be updated.
 module pclogic(	  	input  logic [3:0]	Rd,
-			   	  	input  logic 		Branch,
-			   	  	input  logic 		RegW,
-			   	  	output logic 		PCS);
+			   	  	      input  logic 		Branch,
+			   	  	      input  logic 		RegW,
+			   	  	      output logic 		PCS);
 		
 		assign PCS = ((Rd==15)&RegW)|Branch;	// if branching or if the R15 is needed 
 												// and we want to set the registers (register wirte is enabled).
@@ -188,22 +255,22 @@ module condcheck( 	input  logic [3:0] Cond,
 
   		always_comb
   			case(Cond)
-  				4'b0000 : CondEx = zero;				//EQ
-  				4'b0001 : CondEx = ~zero;				//NE
-  				4'b0010 : CondEx = carry;				//CS
-  				4'b0011 : CondEx = ~carry; 				//CC
-  				4'b0100 : CondEx = neg;					//MI
-  				4'b0101 : CondEx = ~neg;				//PL
-  				4'b0110 : CondEx = overflow;			//VS
-  				4'b0111 : CondEx = ~overflow; 			//VC
-  				4'b1000 : CondEx = carry & (~zero); 	//HI
+  				4'b0000 : CondEx = zero;				        //EQ
+  				4'b0001 : CondEx = ~zero;				        //NE
+  				4'b0010 : CondEx = carry;				        //CS
+  				4'b0011 : CondEx = ~carry; 				      //CC
+  				4'b0100 : CondEx = neg;					        //MI
+  				4'b0101 : CondEx = ~neg;				        //PL
+  				4'b0110 : CondEx = overflow;			      //VS
+  				4'b0111 : CondEx = ~overflow; 			    //VC
+  				4'b1000 : CondEx = carry & (~zero);     //HI
   				4'b1001 : CondEx = ~(carry & (~zero));	//LS
-  				4'b1010 : CondEx = ge;					//GE
-  				4'b1011 : CondEx = ~ge;					//LT
-  				4'b1100 : CondEx = ~zero & ge;			//GT
-  				4'b1101 : CondEx = ~(~zero & ge);		//LE
-  				4'b1110 : CondEx = 1'b1;				//Always
-  				default : CondEx = 1'bx;				//undefined
+  				4'b1010 : CondEx = ge;					        //GE
+  				4'b1011 : CondEx = ~ge;					        //LT
+  				4'b1100 : CondEx = ~zero & ge;			    //GT
+  				4'b1101 : CondEx = ~(~zero & ge);		    //LE
+  				4'b1110 : CondEx = 1'b1;				        //Always
+  				default : CondEx = 1'bx;			         	//undefined
   			endcase
 
 endmodule // condcheck module.
